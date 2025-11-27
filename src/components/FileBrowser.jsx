@@ -4,12 +4,12 @@ import { Folder, File, Download, Info, ChevronRight, ArrowLeft } from 'lucide-re
 import { fileAPI } from '../api/client'
 
 export default function FileBrowser() {
-  const { files, currentPath, setCurrentPath, fetchBrowse, loading, error, token } = useStore()
+  const { files, currentPath, setCurrentPath, fetchBrowse, loading, error, sessionToken } = useStore()
   const [fileDetails, setFileDetails] = React.useState(null)
 
   const handleNavigate = async (path) => {
     try {
-      await fetchBrowse(path, token || null)
+      await fetchBrowse(path, sessionToken || null)
     } catch (error) {
       alert('导航失败: ' + error.message)
     }
@@ -18,22 +18,18 @@ export default function FileBrowser() {
   const handleParentDir = () => {
     const parts = currentPath.split('/').filter(Boolean)
     parts.pop()
-    const parentPath = '/' + parts.join('/')
+    const parentPath = parts.length > 0 ? '/' + parts.join('/') : '.'
     handleNavigate(parentPath)
   }
 
   const handleDownload = (filename) => {
-    const downloadUrl = fileAPI.download(
-      currentPath === '/' ? filename : `${currentPath}/${filename}`,
-      token || null
-    )
+    const downloadUrl = fileAPI.download(filename, null)
     window.open(downloadUrl, '_blank')
   }
 
   const handleFileInfo = async (filename) => {
     try {
-      const path = currentPath === '/' ? filename : `${currentPath}/${filename}`
-      const info = await useStore.getState().fetchFileInfo(path, token || null)
+      const info = await useStore.getState().fetchFileInfo(filename, sessionToken || null)
       setFileDetails(info)
     } catch (error) {
       alert('获取文件信息失败: ' + error.message)
@@ -70,7 +66,7 @@ export default function FileBrowser() {
         >
           根目录
         </button>
-        {currentPath !== '/' && currentPath.split('/').filter(Boolean).map((part, i, arr) => (
+        {currentPath !== '/' && currentPath !== '.' && currentPath.split('/').filter(Boolean).map((part, i, arr) => (
           <React.Fragment key={i}>
             <ChevronRight size={16} />
             <button
@@ -84,7 +80,7 @@ export default function FileBrowser() {
       </div>
 
       {/* 返回按钮 */}
-      {currentPath !== '/' && (
+      {currentPath !== '/' && currentPath !== '.' && (
         <button
           onClick={handleParentDir}
           className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 font-medium transition-colors"
@@ -115,7 +111,7 @@ export default function FileBrowser() {
                   )}
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => item.isDir && handleNavigate(currentPath === '/' ? item.name : `${currentPath}/${item.name}`)}
+                      onClick={() => item.isDir && handleNavigate(currentPath === '.' ? item.name : `${currentPath}/${item.name}`)}
                       className={`font-medium transition-colors truncate ${
                         item.isDir
                           ? 'text-blue-600 hover:text-blue-700 cursor-pointer'

@@ -1,12 +1,14 @@
 import React from 'react'
 import { useStore } from '../store'
 import { LogOut, Settings } from 'lucide-react'
+import logger from '../utils/logger'
 
 export default function Header({ onShowLogin, currentTab, setCurrentTab }) {
-  const { token, clearToken } = useStore()
+  const { isAuthenticated, clearAuth } = useStore()
 
   const handleLogout = () => {
-    clearToken()
+    logger.info('User logging out')
+    clearAuth()
     onShowLogin()
   }
 
@@ -20,13 +22,13 @@ export default function Header({ onShowLogin, currentTab, setCurrentTab }) {
           </div>
 
           <div className="flex items-center gap-4">
-            {token && (
+            {isAuthenticated && (
               <div className="flex items-center gap-2 bg-blue-500/30 px-4 py-2 rounded-lg">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-blue-100 text-sm font-medium">已认证</span>
               </div>
             )}
-            {token && (
+            {isAuthenticated && (
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
@@ -35,7 +37,7 @@ export default function Header({ onShowLogin, currentTab, setCurrentTab }) {
                 登出
               </button>
             )}
-            {!token && (
+            {!isAuthenticated && (
               <button
                 onClick={onShowLogin}
                 className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"

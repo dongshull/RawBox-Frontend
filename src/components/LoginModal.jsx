@@ -3,19 +3,24 @@ import { useStore } from '../store'
 import { Lock, Unlock } from 'lucide-react'
 
 export default function LoginModal({ isOpen, onClose }) {
-  const [tokenInput, setTokenInput] = React.useState('')
-  const [isPrivate, setIsPrivate] = React.useState(false)
-  const { setToken, fetchBrowse } = useStore()
+  const [username, setUsername] = React.useState('admin')
+  const [password, setPassword] = React.useState('')
+  const [isLoading, setIsLoading] = React.useState(false)
+  const { adminLogin, fetchBrowse, loading: storeLoading } = useStore()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setIsLoading(true)
     try {
-      const token = isPrivate ? tokenInput : null
-      await fetchBrowse('/', token)
-      if (token) setToken(token)
+      // 管理员登录
+      const token = await adminLogin(username, password)
+      // 登录成功后加载文件列表
+      await fetchBrowse('.', token)
       onClose()
     } catch (error) {
-      alert('认证失败: ' + error.message)
+      alert('登录失败: ' + error.message)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -30,73 +35,53 @@ export default function LoginModal({ isOpen, onClose }) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 模式选择 */}
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => setIsPrivate(false)}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
-                !isPrivate
-                  ? 'bg-blue-500 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Unlock size={18} />
-                公开模式
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPrivate(true)}
-              className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
-                isPrivate
-                  ? 'bg-purple-500 text-white shadow-lg'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Lock size={18} />
-                私密模式
-              </div>
-            </button>
+          {/* 用户名输入 */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              用户名
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="输入用户名"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            />
           </div>
 
-          {/* Token 输入 */}
-          {isPrivate && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                访问令牌
-              </label>
-              <input
-                type="password"
-                value={tokenInput}
-                onChange={(e) => setTokenInput(e.target.value)}
-                placeholder="输入你的 API Token"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                required={isPrivate}
-              />
-              <p className="text-xs text-gray-500">
-                Token 将被保存到本地存储中
-              </p>
-            </div>
-          )}
+          {/* 密码输入 */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              密码
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="输入密码"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              required
+            />
+          </div>
 
           {/* 提交按钮 */}
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all transform hover:scale-105"
+            disabled={isLoading || storeLoading}
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 text-white py-3 rounded-lg font-medium hover:shadow-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            进入文件库
+            {isLoading || storeLoading ? '登录中...' : '登录'}
           </button>
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-900">
-            💡 提示: 公开模式可以浏览所有公共文件，私密模式需要 Token 来访问受保护的内容。
+            💡 提示: 请输入管理员用户名和密码登录。
           </p>
         </div>
       </div>
     </div>
   )
 }
+

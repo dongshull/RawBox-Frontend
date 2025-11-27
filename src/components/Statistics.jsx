@@ -3,66 +3,39 @@ import { useStore } from '../store'
 import { BarChart3, TrendingUp, Users, Activity, Lock } from 'lucide-react'
 
 export default function Statistics() {
-  const { stats, loading, error, token, fetchStats } = useStore()
-  const [startDate, setStartDate] = React.useState('')
-  const [endDate, setEndDate] = React.useState('')
+  const { stats, loading, error, sessionToken, fetchStats } = useStore()
 
   const handleFetchStats = async () => {
     try {
-      await fetchStats(token, startDate || null, endDate || null)
+      await fetchStats(sessionToken)
     } catch (error) {
-      alert('获取统计失败: ' + error.message)
+      // 错误已在 store 中处理，这里只需要记录
+      console.error('获取统计失败:', error)
     }
   }
 
-  if (!token) {
+  if (!sessionToken) {
     return (
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
         <Lock size={32} className="mx-auto text-blue-500 mb-3" />
-        <p className="text-blue-900 font-medium">需要认证才能查看统计数据</p>
-        <p className="text-blue-700 text-sm mt-2">请使用有效的 Token 登录</p>
+        <p className="text-blue-900 font-medium">需要登录才能查看统计数据</p>
+        <p className="text-blue-700 text-sm mt-2">请先通过管理员账号登录</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      {/* 时间范围选择 */}
+      {/* 查询按钮 */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">查询时间范围</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              开始日期
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              结束日期
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex items-end">
-            <button
-              onClick={handleFetchStats}
-              disabled={loading}
-              className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium py-2 rounded-lg transition-colors"
-            >
-              {loading ? '加载中...' : '查询'}
-            </button>
-          </div>
-        </div>
+        <h3 className="font-semibold text-gray-900 mb-4">查询统计数据</h3>
+        <button
+          onClick={handleFetchStats}
+          disabled={loading}
+          className="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium px-6 py-2 rounded-lg transition-colors"
+        >
+          {loading ? '加载中...' : '刷新统计'}
+        </button>
       </div>
 
       {error && (
@@ -72,7 +45,13 @@ export default function Statistics() {
         </div>
       )}
 
-      {stats && (
+      {!stats && !loading && !error && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 text-center">
+          <p className="text-gray-600">点击"刷新统计"按钮加载数据</p>
+        </div>
+      )}
+
+      {stats && stats.totalRequests !== undefined && (
         <>
           {/* 统计卡片 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -81,7 +60,7 @@ export default function Statistics() {
                 <div>
                   <p className="text-gray-600 text-sm font-medium">总请求数</p>
                   <p className="text-3xl font-bold text-blue-900 mt-2">
-                    {stats.totalRequests}
+                    {stats.totalRequests || 0}
                   </p>
                 </div>
                 <Activity size={40} className="text-blue-400" />
@@ -93,7 +72,7 @@ export default function Statistics() {
                 <div>
                   <p className="text-gray-600 text-sm font-medium">成功率</p>
                   <p className="text-3xl font-bold text-green-900 mt-2">
-                    {stats.successRate.toFixed(2)}%
+                    {(stats.successRate || 0).toFixed(2)}%
                   </p>
                 </div>
                 <TrendingUp size={40} className="text-green-400" />
@@ -105,7 +84,7 @@ export default function Statistics() {
                 <div>
                   <p className="text-gray-600 text-sm font-medium">唯一 IP</p>
                   <p className="text-3xl font-bold text-purple-900 mt-2">
-                    {stats.uniqueIPs}
+                    {stats.uniqueIPs || 0}
                   </p>
                 </div>
                 <Users size={40} className="text-purple-400" />
